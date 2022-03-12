@@ -1,12 +1,26 @@
-# Contract Base
-🏗️ Solidity code template for building and testing - based on Uniswap V3 Core 🦄
+# CSTK Membership Dapp contracts
+
+Here are the contracts for the CSTK membership dapp
+
+## Setting up
+
+You may create a `.env` file in the project root by copying `.env.example`.
 
 ## Compiling the code
 
-Run `yarn compile` to compile contracts using Hardhat 👷.
+Run `yarn compile` to compile contracts using Hardhat 👷
 
-## Running tests
+## Testing and auditing
 
-Rub `yarn test` to run the full test suite.
+### Local tests
 
+Run `yarn test` to run the full test suite.
+
+### Coverage report
+
+Run `yarn coverage` to generate a code coverage report using `hardhat coverage`
+
+### Contract sizes
+
+Run `yarn size-contracts` to compute the size of each compiled contract.
 
