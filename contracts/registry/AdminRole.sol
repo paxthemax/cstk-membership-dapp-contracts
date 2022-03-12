@@ -1,9 +1,9 @@
-pragma solidity ^0.5.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.5.17;
 
-import "@openzeppelin/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts/access/Roles.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-
+import '@openzeppelin/contracts/GSN/Context.sol';
+import '@openzeppelin/contracts/access/Roles.sol';
+import '@openzeppelin/contracts/ownership/Ownable.sol';
 
 /**
  * @title AdminRole
@@ -38,10 +38,7 @@ contract AdminRole is Context, Ownable {
     }
 
     modifier onlyAdmin() {
-        require(
-            isAdmin(_msgSender()),
-            "AdminRole: caller does not have the Admin role"
-        );
+        require(isAdmin(_msgSender()), 'AdminRole: caller does not have the Admin role');
         _;
     }
 
@@ -71,7 +68,7 @@ contract AdminRole is Context, Ownable {
 
     /**
      * @dev Remove the admin role from an admin account. Can only be called by the Owner.
-     * @param account The address t
+     * @param account The address to remove
      */
     function removeAdmin(address account) public onlyOwner {
         _removeAdmin(account);

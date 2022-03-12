@@ -1,11 +1,12 @@
-pragma solidity ^0.5.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.5.17;
 
-import "./interfaces/IMintable.sol";
-import "./registry/Registry.sol";
-import "./registry/AdminRole.sol";
+import './interfaces/IMintable.sol';
+import './registry/Registry.sol';
+import './registry/AdminRole.sol';
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
 
 contract Minter is AdminRole {
     using SafeMath for uint256;
@@ -38,19 +39,12 @@ contract Minter is AdminRole {
         address _registryAddress,
         address _cstkTokenAddress
     ) public AdminRole(_authorizedKeys) {
-        // require(_authorizedKey != address(0), "Authorized key cannot be empty");
-
         dao = IMintable(_daoAddress);
         registry = Registry(_registryAddress);
         cstkToken = IERC20(_cstkTokenAddress);
-
-        // authorizedKey = _authorizedKey;
     }
 
-    function setRatio(uint256 _numerator, uint256 _denominator)
-        external
-        onlyAdmin
-    {
+    function setRatio(uint256 _numerator, uint256 _denominator) external onlyAdmin {
         numerator = _numerator;
         denominator = _denominator;
     }
@@ -72,9 +66,7 @@ contract Minter is AdminRole {
 
         // The recipient cannot receive more than the following amount of tokens:
         // maxR := maxTrust[recipient] * TOTAL_SUPPLY / 10000000.
-        uint256 maxToReceive = maxTrust.mul(totalSupply).div(
-            MAX_TRUST_DENOMINATOR
-        );
+        uint256 maxToReceive = maxTrust.mul(totalSupply).div(MAX_TRUST_DENOMINATOR);
 
         // If the recipient is to receive more than this amount of tokens, reduce
         // mint the difference.
@@ -95,7 +87,7 @@ contract Minter is AdminRole {
         uint256 amount,
         bytes32 homeTx
     ) external onlyAdmin {
-        require(denominator != 0, "denominator cannot be 0");
+        require(denominator != 0, 'denominator cannot be 0');
 
         // Get the amount to mint based on the numerator/denominator.
         uint256 toMint = amount.mul(numerator).div(denominator);
