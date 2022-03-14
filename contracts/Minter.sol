@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.5.17;
 
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+
 import './interfaces/IMintable.sol';
 import './registry/Registry.sol';
 import './registry/AdminRole.sol';
-
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
 
 contract Minter is AdminRole {
     using SafeMath for uint256;
@@ -63,6 +63,15 @@ contract Minter is AdminRole {
 
         // Get the current CSTK balance of the recipient account.
         uint256 recipientBalance = cstkToken.balanceOf(recipient);
+
+        // It's activating membership too
+        if (recipientBalance == 0) {
+            uint256 pendingBalance = registry.getPendingBalance(recipient);
+            toMint = toMint + pendingBalance;
+            if (pendingBalance != 0) {
+                registry.clearPendingBalance(recipient);
+            }
+        }
 
         // The recipient cannot receive more than the following amount of tokens:
         // maxR := maxTrust[recipient] * TOTAL_SUPPLY / 10000000.

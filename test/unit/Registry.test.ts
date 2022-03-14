@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { constants, BigNumberish, Wallet, BigNumber } from 'ethers';
-import { Context__factory } from '../../typechain-types';
-import { ActorFixture, createFixtureLoader, log, provider, registryFixture, RegistryFixture } from '../shared';
+import { ActorFixture, createFixtureLoader, provider, registryFixture, RegistryFixture } from '../shared';
 import { LoadFixtureFunction } from '../types';
 
 const { AddressZero } = constants;
