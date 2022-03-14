@@ -159,17 +159,17 @@ contract Registry is Context, AdminRole {
         pendingBalance = balances[_adr];
     }
 
-    // @notice Set minter contract address
-    // @param _minterContract (address) Address to set
+    /// @notice Set minter contract address
+    /// @param _minterContract (address) Address to set
     function setMinterContract(address _minterContract) external onlyAdmin {
         minterContract = _minterContract;
 
         emit MinterContractSet(_minterContract);
     }
 
-    // @notice Set pending balance of an address
-    // @param _adr (address) Address to set
-    // @param _pendingBalance (uint256) Pending balance of the address
+    /// @notice Set pending balance of an address
+    /// @param _adr (address) Address to set
+    /// @param _pendingBalance (uint256) Pending balance of the address
     function setPendingBalance(address _adr, uint256 _pendingBalance) external onlyAdmin {
         _setPendingBalance(_adr, _pendingBalance);
     }
@@ -217,6 +217,9 @@ contract Registry is Context, AdminRole {
         }
     }
 
+    /// @notice Set the contibutors pending balance to zero
+    /// @dev Can only be called by the Minter
+    /// @param _adr (address) Contributor address
     function clearPendingBalance(address _adr) external onlyMinter {
         require(EnumerableSet.contains(accounts, _adr), 'Address is not a contributor');
 
