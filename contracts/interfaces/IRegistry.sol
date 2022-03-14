@@ -15,7 +15,12 @@ interface IRegistry {
     /// @dev Can only be called by Admin role.
     /// @param _adr (address) The address to register as contributor
     /// @param _maxTrust (uint256) The amount to set as max trust
-    function registerContributor(address _adr, uint256 _maxTrust) external;
+    /// @param _pendingBalance (uint256) The amount to set as pending balance
+    function registerContributor(
+        address _adr,
+        uint256 _maxTrust,
+        uint256 _pendingBalance
+    ) external;
 
     /// @notice Remove an existing contributor.
     /// @dev Can only be called by Admin role.
@@ -27,10 +32,12 @@ interface IRegistry {
     /// @param _cnt (uint256) Number of contributors to add
     /// @param _adrs (address[]) Addresses to register as contributors
     /// @param _trusts (uint256[]) Max trust values to set to each contributor (in order)
+    /// @param _pendingBalances (uint256[]) pending balance values to set to each contributor (in order)
     function registerContributors(
         uint256 _cnt,
         address[] calldata _adrs,
-        uint256[] calldata _trusts
+        uint256[] calldata _trusts,
+        uint256[] calldata _pendingBalances
     ) external;
 
     /// @notice Return all registered contributor addresses.

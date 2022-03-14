@@ -1,9 +1,12 @@
-import { provider } from '../shared/provider';
-import { AdminRoleMock, Registry } from '../../typechain-types';
-import { ActorFixture } from '../shared';
+import { createFixtureLoader, provider } from '../shared/provider';
+import { AdminRoleMock, IERC20, Registry } from '../../typechain-types';
+import { ActorFixture, tokenFixture, TokenFixture } from '../shared';
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Contract, ContractFactory, Wallet } from 'ethers';
+import { LoadFixtureFunction } from '../types';
+
+let loadFixture: LoadFixtureFunction;
 
 describe('unit/Deployment', () => {
   const actors = new ActorFixture(provider.getWallets(), provider);
@@ -36,16 +39,27 @@ describe('unit/Deployment', () => {
   });
 
   describe('Registry', () => {
+    let cstkToken: IERC20;
     let factory: ContractFactory;
-    let deploy: (_admins: Wallet[]) => Promise<Contract>;
+    let deploy: (_admins: Wallet[], _cstkTokenAddress: string) => Promise<Contract>;
 
     before(async () => {
+      loadFixture = createFixtureLoader(provider.getWallets(), provider);
       factory = await ethers.getContractFactory('Registry');
-      deploy = (_admins: Wallet[]) => factory.connect(actors.deployer()).deploy(_admins.map((a) => a.address));
+      deploy = (_admins: Wallet[], _cstkTokenAddress: string) =>
+        factory.connect(actors.deployer()).deploy(
+          _admins.map((a) => a.address),
+          _cstkTokenAddress
+        );
+    });
+
+    beforeEach('create fixture loader', async () => {
+      const { token } = await loadFixture(tokenFixture);
+      cstkToken = token;
     });
 
     it('deploys and has an address', async () => {
-      const registry = (await deploy([])) as Registry;
+      const registry = (await deploy([], cstkToken.address)) as Registry;
       expect(registry.address).to.be.a.string;
     });
   });

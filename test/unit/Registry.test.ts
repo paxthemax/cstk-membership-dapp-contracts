@@ -20,47 +20,52 @@ describe('unit/Registry', () => {
   });
 
   describe('#registerContributor', () => {
-    let subject: (_address: Wallet | string, _maxTrust: BigNumberish, _sender: Wallet) => Promise<any>;
+    let subject: (
+      _address: Wallet | string,
+      _maxTrust: BigNumberish,
+      _pendingBalance: BigNumberish,
+      _sender: Wallet
+    ) => Promise<any>;
     let check: (_address: Wallet | string) => Promise<any>;
 
     beforeEach(() => {
-      subject = (_address: Wallet | string, _maxTrust: BigNumberish, _sender: Wallet) =>
+      subject = (_address: Wallet | string, _maxTrust: BigNumberish, _pendingBalance: BigNumberish, _sender: Wallet) =>
         context.registry
           .connect(_sender)
-          .registerContributor(typeof _address === 'string' ? _address : _address.address, _maxTrust);
+          .registerContributor(typeof _address === 'string' ? _address : _address.address, _maxTrust, _pendingBalance);
       check = (_addr: Wallet | string) =>
         context.registry.getMaxTrust(typeof _addr === 'string' ? _addr : _addr.address);
     });
 
     describe('works and', () => {
       it('emits the contributor added event', async () => {
-        await expect(subject(actors.anyone(), 1000, actors.adminFirst()))
+        await expect(subject(actors.anyone(), 1000, 1000, actors.adminFirst()))
           .to.emit(context.registry, 'ContributorAdded')
           .withArgs(actors.anyone().address);
       });
 
       it('sets the max trust of the contributor', async () => {
-        await subject(actors.anyone(), 1000, actors.adminFirst());
+        await subject(actors.anyone(), 1000, 1000, actors.adminFirst());
         expect(await check(actors.anyone())).to.be.eq(1000);
       });
     });
 
     describe('fails when', async () => {
       it('not called by an admin', async () => {
-        await expect(subject(actors.anyone(), 1000, actors.anyone())).to.be.reverted;
+        await expect(subject(actors.anyone(), 1000, 1000, actors.anyone())).to.be.reverted;
       });
 
       it('trying to register address zero', async () => {
-        await expect(subject(AddressZero, 1000, actors.adminFirst())).to.be.reverted;
+        await expect(subject(AddressZero, 1000, 1000, actors.adminFirst())).to.be.reverted;
       });
 
       it('trying to set max trust to zero', async () => {
-        await expect(subject(actors.anyone(), 0, actors.adminFirst())).to.be.reverted;
+        await expect(subject(actors.anyone(), 0, 1000, actors.adminFirst())).to.be.reverted;
       });
 
       it('trying to register an existing contributor', async () => {
-        const existing = context.contributors[0].address;
-        await expect(subject(existing, 1000, actors.adminFirst())).to.be.reverted;
+        const existing = context.state.contributors[0].address;
+        await expect(subject(existing, 1000, 1000, actors.adminFirst())).to.be.reverted;
       });
     });
   });
@@ -105,22 +110,35 @@ describe('unit/Registry', () => {
   });
 
   describe('#registerContributors', () => {
-    let subject: (_cnt: BigNumberish, _addrs: Wallet[], _trusts: BigNumberish[], _sender: Wallet) => Promise<any>;
+    let subject: (
+      _cnt: BigNumberish,
+      _addrs: Wallet[],
+      _trusts: BigNumberish[],
+      _pendingBalances: BigNumberish[],
+      _sender: Wallet
+    ) => Promise<any>;
     let check: (_addr: Wallet) => Promise<BigNumber>;
 
     beforeEach(() => {
-      subject = (_cnt: BigNumberish, _addrs: Wallet[], _trusts: BigNumberish[], _sender: Wallet) =>
+      subject = (
+        _cnt: BigNumberish,
+        _addrs: Wallet[],
+        _trusts: BigNumberish[],
+        _pendingBalances: BigNumberish[],
+        _sender: Wallet
+      ) =>
         context.registry.connect(_sender).registerContributors(
           _cnt,
           _addrs.map((a) => a.address),
-          _trusts
+          _trusts,
+          _pendingBalances
         );
       check = (_addr: Wallet) => context.registry.getMaxTrust(_addr.address);
     });
 
     describe('works and', () => {
       it('registers contributors', async () => {
-        await subject(2, actors.users(), [1000, 2000], actors.adminFirst());
+        await subject(2, actors.users(), [1000, 2000], [1000, 2000], actors.adminFirst());
         expect(await check(actors.userFirst())).to.be.eq(1000);
         expect(await check(actors.userSecond())).to.be.eq(2000);
       });
@@ -128,14 +146,14 @@ describe('unit/Registry', () => {
 
     describe('fails when', () => {
       it('not called by an admin address', async () => {
-        await expect(subject(2, actors.users(), [1000, 2000], actors.anyone())).to.be.reverted;
+        await expect(subject(2, actors.users(), [1000, 2000], [1000, 2000], actors.anyone())).to.be.reverted;
       });
       it('the number of addresses is mismatched', async () => {
-        await expect(subject(2, [], [1000, 2000], actors.adminFirst())).to.be.reverted;
+        await expect(subject(2, [], [1000, 2000], [1000, 2000], actors.adminFirst())).to.be.reverted;
       });
 
       it('the number of trust values is mismatched', async () => {
-        await expect(subject(2, actors.users(), [], actors.adminFirst())).to.be.reverted;
+        await expect(subject(2, actors.users(), [], [], actors.adminFirst())).to.be.reverted;
       });
     });
   });
@@ -149,7 +167,7 @@ describe('unit/Registry', () => {
 
     describe('works and', () => {
       it('returns all contributors', async () => {
-        expect(await subject()).to.have.same.members(context.contributors.map((c) => c.address));
+        expect(await subject()).to.have.same.members(context.state.contributors.map((c) => c.address));
       });
     });
   });
@@ -164,9 +182,9 @@ describe('unit/Registry', () => {
     describe('works and', () => {
       it('returns info for all contributors', async () => {
         const res = await subject();
-        expect(res.contributors).to.have.same.members(context.contributors.map((c) => c.address));
+        expect(res.contributors).to.have.same.members(context.state.contributors.map((c) => c.address));
         expect(res.trusts.map((t) => t.toNumber())).to.have.ordered.members(
-          context.contributors.map((c) => c.maxTrust)
+          context.state.contributors.map((c) => c.maxTrust)
         );
       });
     });
@@ -182,7 +200,7 @@ describe('unit/Registry', () => {
 
     describe('works and', () => {
       it('returns max trust for a registered contributor', async () => {
-        for (const c of context.contributors) {
+        for (const c of context.state.contributors) {
           expect(await subject(c.address)).to.be.eq(c.maxTrust);
         }
       });
