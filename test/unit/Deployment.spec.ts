@@ -1,6 +1,6 @@
 import { createFixtureLoader, provider } from '../shared/provider';
 import { AdminRoleMock, IERC20, Registry } from '../../typechain-types';
-import { ActorFixture, tokenFixture, TokenFixture } from '../shared';
+import { ActorFixture, tokenFixture } from '../shared';
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Contract, ContractFactory, Wallet } from 'ethers';
@@ -8,11 +8,13 @@ import { LoadFixtureFunction } from '../types';
 
 let loadFixture: LoadFixtureFunction;
 
+const { AddressZero } = ethers.constants;
+
 describe('unit/Deployment', () => {
   const actors = new ActorFixture(provider.getWallets(), provider);
+  let factory: ContractFactory;
 
   describe('AdminRole', () => {
-    let factory: ContractFactory;
     let deploy: (_params: Wallet[]) => Promise<Contract>;
 
     before(async () => {
@@ -40,7 +42,6 @@ describe('unit/Deployment', () => {
 
   describe('Registry', () => {
     let cstkToken: IERC20;
-    let factory: ContractFactory;
     let deploy: (_admins: Wallet[], _cstkTokenAddress: string) => Promise<Contract>;
 
     before(async () => {
@@ -61,6 +62,26 @@ describe('unit/Deployment', () => {
     it('deploys and has an address', async () => {
       const registry = (await deploy([], cstkToken.address)) as Registry;
       expect(registry.address).to.be.a.string;
+    });
+  });
+
+  describe('Minter', () => {
+    let deploy: (
+      _authorizedKeys: string[],
+      _daoAddress: string,
+      _registryAddress: string,
+      _cstkTokenAddress: string
+    ) => Promise<Contract>;
+
+    before(async () => {
+      factory = await ethers.getContractFactory('Minter');
+      deploy = (_authorizedKeys: string[], _daoAddress: string, _registryAddress: string, _cstkTokenAddress: string) =>
+        factory.connect(actors.deployer()).deploy(_authorizedKeys, _daoAddress, _registryAddress, _cstkTokenAddress);
+    });
+
+    it('deploys and has an address', async () => {
+      const minter = await deploy([], AddressZero, AddressZero, AddressZero);
+      expect(minter.address).to.be.a.string;
     });
   });
 });

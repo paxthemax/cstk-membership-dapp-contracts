@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { constants, BigNumberish, Wallet, BigNumber } from 'ethers';
-import { ActorFixture, createFixtureLoader, provider, registryFixture, RegistryFixture } from '../shared';
+import { ActorFixture, BurnAddress, createFixtureLoader, provider, registryFixture, RegistryFixture } from '../shared';
 import { LoadFixtureFunction } from '../types';
 
 const { AddressZero } = constants;
@@ -203,6 +203,52 @@ describe('unit/Registry', () => {
         for (const c of context.state.contributors) {
           expect(await subject(c.address)).to.be.eq(c.maxTrust);
         }
+      });
+    });
+  });
+
+  describe('#getPendingBalance', () => {
+    let subject: (_adr: Wallet | string) => Promise<any>;
+
+    beforeEach(() => {
+      subject = (_adr: Wallet | string) =>
+        context.registry.getPendingBalance(typeof _adr === 'string' ? _adr : _adr.address);
+    });
+
+    describe('works and', () => {
+      it('returns pending balance for a registered contributor', async () => {
+        for (const c of context.state.contributors) {
+          expect(await subject(c.address)).to.be.eq(c.pendingBalance);
+        }
+      });
+    });
+  });
+
+  describe('#setMinterContract', () => {
+    let subject: (_minterContract: string, _sender: Wallet) => Promise<any>;
+
+    beforeEach(() => {
+      subject = (_minterContract: string, _sender: Wallet) =>
+        context.registry.connect(_sender).setMinterContract(_minterContract);
+    });
+
+    describe('works and', () => {
+      it('emits the minter contract set event', async () => {
+        await expect(subject(AddressZero, actors.adminFirst()))
+          .to.emit(context.registry, 'MinterContractSet')
+          .withArgs(AddressZero);
+      });
+
+      it('sets the minter contract address', async () => {
+        const testAddress = BurnAddress;
+        await subject(testAddress, actors.adminFirst());
+        expect(await context.registry.minterContract()).to.be.eq(testAddress);
+      });
+    });
+
+    describe('fails when', () => {
+      it('not called by an admin address', async () => {
+        await expect(subject(AddressZero, actors.anyone())).to.be.reverted;
       });
     });
   });

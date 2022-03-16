@@ -4,23 +4,13 @@ pragma solidity ^0.5.17;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
+import './interfaces/IMinter.sol';
 import './interfaces/IMintable.sol';
 import './registry/Registry.sol';
 import './registry/AdminRole.sol';
 
-contract Minter is AdminRole {
+contract Minter is IMinter, AdminRole {
     using SafeMath for uint256;
-
-    event Donate(
-        address indexed sender,
-        address indexed token,
-        uint64 indexed receiverId,
-        uint256 amount,
-        uint256 receivedCSTK,
-        bytes32 homeTx
-    );
-
-    event Mint(address indexed recipient, uint256 amount);
 
     uint256 private constant MAX_TRUST_DENOMINATOR = 10000000;
 
@@ -32,6 +22,8 @@ contract Minter is AdminRole {
 
     uint256 public numerator;
     uint256 public denominator;
+
+    address public collector;
 
     constructor(
         address[] memory _authorizedKeys,
@@ -104,5 +96,11 @@ contract Minter is AdminRole {
         _mint(sender, toMint);
 
         emit Donate(sender, token, receiverId, amount, toMint, homeTx);
+    }
+
+    function changeCollector(address _collector) external onlyAdmin {
+        require(_collector != address(0), 'Collector cannot be zero address');
+        collector = _collector;
+        emit CollectorChanged(_collector, msg.sender);
     }
 }

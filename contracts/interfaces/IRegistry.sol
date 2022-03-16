@@ -5,10 +5,10 @@ pragma solidity ^0.5.17;
 // Max trust will determine the maximum amount of tokens the account can obtain.
 /// @author Nelson Melina, Pavle Batuta
 interface IRegistry {
-    /// @dev Emit when a contributor has been added:
+    /// @dev Event emitted when a contributor has been added:
     event ContributorAdded(address adr);
 
-    /// @dev Emit when a contributor has been removed:
+    /// @dev Event emitted when a contributor has been removed:
     event ContributorRemoved(address adr);
 
     /// @notice Register a contributor and set a non-zero max trust.

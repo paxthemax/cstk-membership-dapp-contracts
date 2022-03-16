@@ -4,18 +4,19 @@ import { Wallet } from 'ethers';
 // User indexes:
 export const WALLET_USER_INDEXES = {
   OWNER: 0,
-  ADMIN_FIRST: 1,
-  ADMIN_SECOND: 2,
-  ADMIN_THIRD: 3,
-  ADMIN_FOURTH: 4,
-  CONTRIBUTOR_FIRST: 5,
-  CONTRIBUTOR_SECOND: 6,
-  USER_FIRST: 7,
-  USER_SECOND: 8,
+  DAO: 1,
+  ADMIN_FIRST: 2,
+  ADMIN_SECOND: 3,
+  ADMIN_THIRD: 4,
+  ADMIN_FOURTH: 5,
+  CONTRIBUTOR_FIRST: 6,
+  CONTRIBUTOR_SECOND: 7,
+  USER_FIRST: 8,
+  USER_SECOND: 9,
   DRAIN_VAULT_RECEIVER: 0,
   ESCAPE_HATCH_CALLER: 0,
   ESCAPE_HATCH_DESTINATION: 0,
-  OTHER: 9,
+  OTHER: 10,
 };
 
 export class ActorFixture {
@@ -28,6 +29,10 @@ export class ActorFixture {
 
   owner() {
     return this._getActor(WALLET_USER_INDEXES.OWNER);
+  }
+
+  dao() {
+    return this._getActor(WALLET_USER_INDEXES.DAO);
   }
 
   deployer() {

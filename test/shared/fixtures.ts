@@ -4,20 +4,25 @@ import { Fixture } from 'ethereum-waffle';
 
 import {
   AdminRoleMock,
-  IRegistry,
+  Registry,
   AdminRoleMock__factory,
   TestERC20__factory,
+  TestMintable__factory,
   Registry__factory,
   IERC20,
+  Minter,
+  Minter__factory,
+  IMintable,
 } from '../../typechain-types';
 
 import { ActorFixture } from './actors';
 import { provider } from './provider';
-import { log } from './logging';
 
 const { abi: RegistryABI, bytecode: RegistryBytecode } = Registry__factory;
 const { abi: AdminRoleMockABI, bytecode: AdminRoleMockBytecode } = AdminRoleMock__factory;
+const { abi: TestMintableABI, bytecode: TestMintableBytecode } = TestMintable__factory;
 const { abi: TestERC20ABI, bytecode: TestERC20Bytecode } = TestERC20__factory;
+const { abi: MinterABI, bytecode: MinterBytecode } = Minter__factory;
 
 export type AdminRoleMockFixture = {
   adminRole: AdminRoleMock;
@@ -69,7 +74,8 @@ export const tokenFixture: Fixture<TokenFixture> = async ([wallet]) => {
 };
 
 export type RegistryFixture = {
-  registry: IRegistry;
+  registry: Registry;
+  token: IERC20;
   params: {
     admins: string[];
     cstkTokenAddress: string;
@@ -78,6 +84,7 @@ export type RegistryFixture = {
     contributors: {
       address: string;
       maxTrust: BigNumberish;
+      pendingBalance: BigNumberish;
     }[];
   };
 };
@@ -95,7 +102,7 @@ export const registryFixture: Fixture<RegistryFixture> = async ([wallet]) => {
       abi: RegistryABI,
     },
     [admins, token.address]
-  )) as IRegistry;
+  )) as Registry;
 
   const contributors = [
     { address: actors.contributorFirst().address, maxTrust: 1000, pendingBalance: 500 },
@@ -113,12 +120,58 @@ export const registryFixture: Fixture<RegistryFixture> = async ([wallet]) => {
 
   return {
     registry,
+    token,
     params: {
       admins,
       cstkTokenAddress: token.address,
     },
     state: {
       contributors,
+    },
+  };
+};
+
+export type MinterFixture = {
+  minter: Minter;
+  token: IERC20;
+  dao: IMintable;
+  params: {
+    authorizedKeys: string[];
+    daoAddress: string;
+    registryAddress: string;
+    cstkTokenAddress: string;
+  };
+};
+
+export const minterFixture: Fixture<MinterFixture> = async ([wallet]) => {
+  const actors = new ActorFixture(provider.getWallets(), provider);
+  const admins = [actors.adminFirst().address, actors.adminSecond().address];
+
+  const { registry, token } = await registryFixture([wallet], provider);
+
+  const dao = (await waffle.deployContract(wallet, {
+    abi: TestMintableABI,
+    bytecode: TestMintableBytecode,
+  })) as IMintable;
+
+  const minter = (await waffle.deployContract(
+    wallet,
+    {
+      abi: MinterABI,
+      bytecode: MinterBytecode,
+    },
+    [admins, dao.address, registry.address, token.address]
+  )) as Minter;
+
+  return {
+    minter,
+    token,
+    dao,
+    params: {
+      authorizedKeys: admins,
+      daoAddress: dao.address,
+      registryAddress: registry.address,
+      cstkTokenAddress: token.address,
     },
   };
 };
