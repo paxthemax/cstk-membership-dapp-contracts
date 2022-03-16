@@ -12,3 +12,4 @@ export * from './provider';
 export * from './snapshotGasCost';
 export * from './time';
 export * from './timeMachine';
+export * from './toAddr';

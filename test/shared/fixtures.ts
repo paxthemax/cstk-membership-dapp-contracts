@@ -1,5 +1,5 @@
-import { BigNumber, BigNumberish } from 'ethers';
-import { waffle } from 'hardhat';
+import { BigNumberish, Wallet } from 'ethers';
+import { ethers, waffle } from 'hardhat';
 import { Fixture } from 'ethereum-waffle';
 
 import {
@@ -17,6 +17,9 @@ import {
 
 import { ActorFixture } from './actors';
 import { provider } from './provider';
+import { toAddr } from './toAddr';
+
+const { parseEther } = ethers.utils;
 
 const { abi: RegistryABI, bytecode: RegistryBytecode } = Registry__factory;
 const { abi: AdminRoleMockABI, bytecode: AdminRoleMockBytecode } = AdminRoleMock__factory;
@@ -50,12 +53,15 @@ export const adminRoleMockFixture: Fixture<AdminRoleMockFixture> = async ([walle
 export type TokenFixture = {
   token: IERC20;
   params: {
-    amountToMint: BigNumber;
+    amountToMint: BigNumberish;
+  };
+  state: {
+    totalSupply: BigNumberish;
   };
 };
 
 export const tokenFixture: Fixture<TokenFixture> = async ([wallet]) => {
-  const amountToMint = BigNumber.from(2).pow(255);
+  const amountToMint = parseEther('100000000'); // 100B
   const token = (await waffle.deployContract(
     wallet,
     {
@@ -70,7 +76,16 @@ export const tokenFixture: Fixture<TokenFixture> = async ([wallet]) => {
     params: {
       amountToMint,
     },
+    state: {
+      totalSupply: amountToMint,
+    },
   };
+};
+
+export type RegistryContributor = {
+  address: string;
+  maxTrust: BigNumberish;
+  pendingBalance: BigNumberish;
 };
 
 export type RegistryFixture = {
@@ -81,15 +96,21 @@ export type RegistryFixture = {
     cstkTokenAddress: string;
   };
   state: {
-    contributors: {
-      address: string;
-      maxTrust: BigNumberish;
-      pendingBalance: BigNumberish;
-    }[];
+    pendingContributors: RegistryContributor[];
+    contributors: RegistryContributor[];
+    everyone: RegistryContributor[];
   };
 };
 
 export const registryFixture: Fixture<RegistryFixture> = async ([wallet]) => {
+  const registerContributors = async (_contributors: RegistryContributor[], _registry: Registry) => {
+    await _registry.registerContributors(
+      _contributors.length,
+      _contributors.map((c) => c.address),
+      _contributors.map((c) => c.maxTrust),
+      _contributors.map((c) => c.pendingBalance)
+    );
+  };
   const actors = new ActorFixture(provider.getWallets(), provider);
   const admins = [actors.adminFirst().address, actors.adminSecond().address];
 
@@ -104,19 +125,35 @@ export const registryFixture: Fixture<RegistryFixture> = async ([wallet]) => {
     [admins, token.address]
   )) as Registry;
 
-  const contributors = [
-    { address: actors.contributorFirst().address, maxTrust: 1000, pendingBalance: 500 },
-    { address: actors.contrbutorSecond().address, maxTrust: 2000, pendingBalance: 1500 },
+  const contributors = <RegistryContributor[]>[
+    {
+      address: toAddr(actors.contributorFirst()),
+      maxTrust: '1000',
+      pendingBalance: '0',
+    },
+    {
+      address: toAddr(actors.contributorSecond()),
+      maxTrust: '2000',
+      pendingBalance: '0',
+    },
   ];
+  await registerContributors(contributors, registry);
 
-  await registry
-    .connect(actors.adminFirst())
-    .registerContributors(
-      2,
-      [contributors[0].address, contributors[1].address],
-      [contributors[0].maxTrust, contributors[1].maxTrust],
-      [contributors[0].pendingBalance, contributors[1].pendingBalance]
-    );
+  const pendingContributors = <RegistryContributor[]>[
+    {
+      address: toAddr(actors.pendingContributorFirst()),
+      maxTrust: '1000',
+      pendingBalance: '1000',
+    },
+    {
+      address: toAddr(actors.pendingContributorSecond()),
+      maxTrust: '2000',
+      pendingBalance: '2000',
+    },
+  ];
+  await registerContributors(pendingContributors, registry);
+
+  const everyone = contributors.concat(pendingContributors);
 
   return {
     registry,
@@ -127,6 +164,8 @@ export const registryFixture: Fixture<RegistryFixture> = async ([wallet]) => {
     },
     state: {
       contributors,
+      pendingContributors,
+      everyone,
     },
   };
 };
@@ -140,6 +179,11 @@ export type MinterFixture = {
     daoAddress: string;
     registryAddress: string;
     cstkTokenAddress: string;
+  };
+  state: {
+    numerator: BigNumberish;
+    denominator: BigNumberish;
+    collector: string;
   };
 };
 
@@ -163,6 +207,13 @@ export const minterFixture: Fixture<MinterFixture> = async ([wallet]) => {
     [admins, dao.address, registry.address, token.address]
   )) as Minter;
 
+  const collector = dao.address;
+  await minter.changeCollector(collector);
+
+  const numerator = 500;
+  const denominator = 1000;
+  await minter.setRatio(numerator, denominator);
+
   return {
     minter,
     token,
@@ -172,6 +223,11 @@ export const minterFixture: Fixture<MinterFixture> = async ([wallet]) => {
       daoAddress: dao.address,
       registryAddress: registry.address,
       cstkTokenAddress: token.address,
+    },
+    state: {
+      numerator,
+      denominator,
+      collector,
     },
   };
 };

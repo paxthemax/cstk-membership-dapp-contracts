@@ -8,6 +8,7 @@ contract TestMintable is IMintable {
     address public lastReceiver;
     uint256 public lastAmount;
 
+    event EthReceived(address sender, uint256 amount);
     event Minted(address caller, address who, uint256 value);
 
     function mint(address _who, uint256 _value) external {
@@ -15,5 +16,9 @@ contract TestMintable is IMintable {
         lastReceiver = _who;
         lastAmount = _value;
         emit Minted(msg.sender, _who, _value);
+    }
+
+    function() external payable {
+        emit EthReceived(msg.sender, msg.value);
     }
 }

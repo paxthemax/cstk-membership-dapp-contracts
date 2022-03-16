@@ -3,6 +3,7 @@ pragma solidity ^0.5.17;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 
 import './interfaces/IMinter.sol';
 import './interfaces/IMintable.sol';
@@ -10,6 +11,7 @@ import './registry/Registry.sol';
 import './registry/AdminRole.sol';
 
 contract Minter is IMinter, AdminRole {
+    using Address for address payable;
     using SafeMath for uint256;
 
     uint256 private constant MAX_TRUST_DENOMINATOR = 10000000;
@@ -18,12 +20,12 @@ contract Minter is IMinter, AdminRole {
     IERC20 internal cstkToken;
     IMintable internal dao;
 
-    address public authorizedKey;
+    address public authorizedKey; // NOTE: use of this storage slot is reserved
 
     uint256 public numerator;
     uint256 public denominator;
 
-    address public collector;
+    address payable public collector;
 
     constructor(
         address[] memory _authorizedKeys,
@@ -39,6 +41,7 @@ contract Minter is IMinter, AdminRole {
     function setRatio(uint256 _numerator, uint256 _denominator) external onlyAdmin {
         numerator = _numerator;
         denominator = _denominator;
+        emit RatioChanged(_numerator, _denominator);
     }
 
     function mint(address recipient, uint256 toMint) external onlyAdmin {
@@ -81,24 +84,17 @@ contract Minter is IMinter, AdminRole {
         }
     }
 
-    function deposit(
-        address sender,
-        address token,
-        uint64 receiverId,
-        uint256 amount,
-        bytes32 homeTx
-    ) external onlyAdmin {
-        require(denominator != 0, 'denominator cannot be 0');
-
+    function pay(address beneficiary) external payable {
         // Get the amount to mint based on the numerator/denominator.
-        uint256 toMint = amount.mul(numerator).div(denominator);
+        uint256 toMint = msg.value.mul(numerator).div(denominator);
+        // _mint(beneficiary, toMint);
 
-        _mint(sender, toMint);
+        collector.sendValue(msg.value);
 
-        emit Donate(sender, token, receiverId, amount, toMint, homeTx);
+        emit PaymentReceived(beneficiary, toMint);
     }
 
-    function changeCollector(address _collector) external onlyAdmin {
+    function changeCollector(address payable _collector) external onlyAdmin {
         require(_collector != address(0), 'Collector cannot be zero address');
         collector = _collector;
         emit CollectorChanged(_collector, msg.sender);

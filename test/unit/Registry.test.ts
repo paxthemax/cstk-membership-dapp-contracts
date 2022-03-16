@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { constants, BigNumberish, Wallet, BigNumber } from 'ethers';
+import { constants, BigNumberish, Wallet } from 'ethers';
 import { ActorFixture, BurnAddress, createFixtureLoader, provider, registryFixture, RegistryFixture } from '../shared';
 import { LoadFixtureFunction } from '../types';
 
@@ -112,48 +112,51 @@ describe('unit/Registry', () => {
   describe('#registerContributors', () => {
     let subject: (
       _cnt: BigNumberish,
-      _addrs: Wallet[],
+      _addrs: string[],
       _trusts: BigNumberish[],
       _pendingBalances: BigNumberish[],
       _sender: Wallet
     ) => Promise<any>;
-    let check: (_addr: Wallet) => Promise<BigNumber>;
+    let check: (_account: string) => Promise<any>;
 
-    beforeEach(() => {
+    let contributors: string[];
+    let maxTrusts: BigNumberish[];
+    let pendingBalances: BigNumberish[];
+
+    before(() => {
       subject = (
         _cnt: BigNumberish,
-        _addrs: Wallet[],
+        _addrs: string[],
         _trusts: BigNumberish[],
         _pendingBalances: BigNumberish[],
         _sender: Wallet
-      ) =>
-        context.registry.connect(_sender).registerContributors(
-          _cnt,
-          _addrs.map((a) => a.address),
-          _trusts,
-          _pendingBalances
-        );
-      check = (_addr: Wallet) => context.registry.getMaxTrust(_addr.address);
+      ) => context.registry.connect(_sender).registerContributors(_cnt, _addrs, _trusts, _pendingBalances);
+
+      check = (_account: string) => context.registry.getMaxTrust(_account);
+
+      contributors = actors.others(2).map((c) => c.address);
+      maxTrusts = ['1000', '2000'];
+      pendingBalances = ['1000', '2000'];
     });
 
     describe('works and', () => {
       it('registers contributors', async () => {
-        await subject(2, actors.users(), [1000, 2000], [1000, 2000], actors.adminFirst());
-        expect(await check(actors.userFirst())).to.be.eq(1000);
-        expect(await check(actors.userSecond())).to.be.eq(2000);
+        await subject('2', contributors, maxTrusts, pendingBalances, actors.adminFirst());
+        expect(await check(contributors[0])).to.be.eq('1000');
+        expect(await check(contributors[1])).to.be.eq('2000');
       });
     });
 
     describe('fails when', () => {
       it('not called by an admin address', async () => {
-        await expect(subject(2, actors.users(), [1000, 2000], [1000, 2000], actors.anyone())).to.be.reverted;
+        await expect(subject(2, contributors, maxTrusts, pendingBalances, actors.anyone())).to.be.reverted;
       });
       it('the number of addresses is mismatched', async () => {
-        await expect(subject(2, [], [1000, 2000], [1000, 2000], actors.adminFirst())).to.be.reverted;
+        await expect(subject(2, [], maxTrusts, pendingBalances, actors.adminFirst())).to.be.reverted;
       });
 
       it('the number of trust values is mismatched', async () => {
-        await expect(subject(2, actors.users(), [], [], actors.adminFirst())).to.be.reverted;
+        await expect(subject(2, contributors, [], [], actors.adminFirst())).to.be.reverted;
       });
     });
   });
@@ -167,7 +170,7 @@ describe('unit/Registry', () => {
 
     describe('works and', () => {
       it('returns all contributors', async () => {
-        expect(await subject()).to.have.same.members(context.state.contributors.map((c) => c.address));
+        expect(await subject()).to.have.same.members(context.state.everyone.map((c) => c.address));
       });
     });
   });
@@ -182,9 +185,9 @@ describe('unit/Registry', () => {
     describe('works and', () => {
       it('returns info for all contributors', async () => {
         const res = await subject();
-        expect(res.contributors).to.have.same.members(context.state.contributors.map((c) => c.address));
-        expect(res.trusts.map((t) => t.toNumber())).to.have.ordered.members(
-          context.state.contributors.map((c) => c.maxTrust)
+        expect(res.contributors).to.have.same.members(context.state.everyone.map((c) => c.address));
+        expect(res.trusts.map((t) => t.toString())).to.have.ordered.members(
+          context.state.everyone.map((c) => c.maxTrust)
         );
       });
     });

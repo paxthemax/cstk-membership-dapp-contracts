@@ -9,10 +9,10 @@ export const WALLET_USER_INDEXES = {
   ADMIN_SECOND: 3,
   ADMIN_THIRD: 4,
   ADMIN_FOURTH: 5,
-  CONTRIBUTOR_FIRST: 6,
-  CONTRIBUTOR_SECOND: 7,
-  USER_FIRST: 8,
-  USER_SECOND: 9,
+  MEMEBER_FIRST: 6,
+  MEMEBER_SECOND: 7,
+  PENDING_MEMBER_FIRST: 8,
+  PENDING_MEMBER_SECOND: 9,
   DRAIN_VAULT_RECEIVER: 0,
   ESCAPE_HATCH_CALLER: 0,
   ESCAPE_HATCH_DESTINATION: 0,
@@ -56,27 +56,27 @@ export class ActorFixture {
   }
 
   contributorFirst() {
-    return this._getActor(WALLET_USER_INDEXES.CONTRIBUTOR_FIRST);
+    return this._getActor(WALLET_USER_INDEXES.MEMEBER_FIRST);
   }
 
-  contrbutorSecond() {
-    return this._getActor(WALLET_USER_INDEXES.CONTRIBUTOR_SECOND);
+  contributorSecond() {
+    return this._getActor(WALLET_USER_INDEXES.MEMEBER_SECOND);
   }
 
   contributors() {
-    return [this.contributorFirst(), this.contrbutorSecond()];
+    return [this.contributorFirst(), this.contributorSecond()];
   }
 
-  userFirst() {
-    return this._getActor(WALLET_USER_INDEXES.USER_FIRST);
+  pendingContributorFirst() {
+    return this._getActor(WALLET_USER_INDEXES.PENDING_MEMBER_FIRST);
   }
 
-  userSecond() {
-    return this._getActor(WALLET_USER_INDEXES.USER_SECOND);
+  pendingContributorSecond() {
+    return this._getActor(WALLET_USER_INDEXES.PENDING_MEMBER_SECOND);
   }
 
-  users() {
-    return [this.userFirst(), this.userSecond()];
+  pendingContributors() {
+    return [this.pendingContributorFirst(), this.pendingContributorSecond()];
   }
 
   drainVaultReceiver() {
@@ -97,6 +97,13 @@ export class ActorFixture {
 
   anyone() {
     return this.other();
+  }
+
+  others(cnt: number) {
+    if (cnt < 0) {
+      throw new Error(`Invalid cnt: ${cnt}`);
+    }
+    return this.wallets.slice(WALLET_USER_INDEXES.OTHER, WALLET_USER_INDEXES.OTHER + cnt);
   }
 
   // Actual logic of fetching the wallet

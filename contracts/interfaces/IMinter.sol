@@ -22,39 +22,32 @@ contract IMinter {
     /// @param toMint The amount of CSTK we expect to mint
     function mint(address recipient, uint256 toMint) external;
 
-    function deposit(
-        address sender,
-        address token,
-        uint64 receiverId,
-        uint256 amount,
-        bytes32 homeTx
-    ) external;
-
     /// @notice Change the address of the collector.
     /// @dev Can only be called by an Admin account.
     /// @param _collector The collector address.
-    function changeCollector(address _collector) external;
+    function changeCollector(address payable _collector) external;
 
-    /// @dev Event emitted when a donation has been made by a sender.
-    /// @param sender The sender that made the donation
-    /// @param token The token received
-    /// @param receiverId TODO: do we need this?
-    /// @param amount The amount of tokens donated
-    /// @param receivedCSTK The amount of CSTK tokens received in return
-    /// @param homeTx TODO: do we need this?
-    event Donate(
-        address indexed sender,
-        address indexed token,
-        uint64 indexed receiverId,
-        uint256 amount,
-        uint256 receivedCSTK,
-        bytes32 homeTx
-    );
+    /// @notice Pay eth and mint the appropiate amount of CSTK tokens to the beneficiary.
+    ///
+    /// The amount of tokens recieved is equal to value of eth send multiplied by the current ratio.
+    /// @dev Payments are forwarded to the collector.
+    /// @param beneficiary The beneficiary of the minted CSTK tokens
+    function pay(address beneficiary) external payable;
+
+    /// @dev Event emitted when a payment of eth is received by the Minter
+    /// @param sender The account making the payment
+    /// @param amount The amount of wei received
+    event PaymentReceived(address sender, uint256 amount);
 
     /// @dev Event emitted when CSTK tokens are minted to the recipient.
     /// @param recipient The address receiving the tokens
     /// @param amount The amount of CSTK tokens received
     event Mint(address indexed recipient, uint256 amount);
+
+    /// @dev Event emitted when the mint ratio is changed
+    /// @param nominator The new nominator value
+    /// @param denominator The new denominator value
+    event RatioChanged(uint256 nominator, uint256 denominator);
 
     /// @dev Event emitted when the collector address is changed
     /// @param collector The new collector address
